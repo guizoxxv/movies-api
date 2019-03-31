@@ -7,7 +7,7 @@ verify_ssl = true
 
 [packages]
 flask = "*"
-flask-mongoalchemy = "*"
+flask-pymongo = "*"
 
 [requires]
 python_version = "3.5"

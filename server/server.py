@@ -1,27 +1,28 @@
 from flask import Flask, request, jsonify
-# from pymongo import MongoClient
-from flask_mongoalchemy import MongoAlchemy
+from flask_pymongo import PyMongo
 
 app = Flask(__name__)
 
-# client = MongoClient('mongodb://root:root@172.17.0.1:3012/')
+app.config["MONGO_URI"] = "mongodb://localhost:3012/movies_api"
 
-# db = client.movies_api
-
-app.config['MONGOALCHEMY_DATABASE'] = 'movies_api'
-app.config['MONGOALCHEMY_SERVER'] = '172.17.0.1'
-app.config['MONGOALCHEMY_PORT'] = '3012'
-app.config['MONGOALCHEMY_USER'] = 'root'
-app.config['MONGOALCHEMY_PASSWORD'] = 'root'
-
-db = MongoAlchemy(app)
-
-class Example(db.Document):
-    name = db.StringField()
+mongo = PyMongo(app)
 
 @app.route('/', methods=['GET'])
 def home():
     return jsonify({ 'message': 'Hello World' })
 
+@app.route('/api/movies', methods=['GET'])
+def list():
+    db_movies = mongo.db.movies
+
+    movies = []
+    
+    for movie in db_movies.find():
+        movies.append({
+            'title': movie['title']
+        })
+    
+    return jsonify(movies)
+
 if __name__ == '__main__':
-    app.run(debug=True, host='0.0.0.0')
+    app.run(debug=True)
