@@ -10,7 +10,7 @@ services:
     ports:
       - 3011:5000
     tty: true
-    command: python server.py
+    # command: python server.py
   db:
     image: mongo:4
     ports:
@@ -21,6 +21,8 @@ services:
     working_dir: /home/db
     environment:
       - TZ=America/Sao_Paulo
+      - MONGO_INITDB_ROOT_USERNAME=root
+      - MONGO_INITDB_ROOT_PASSWORD=root
 volumes:
   dbdata:
     driver: local

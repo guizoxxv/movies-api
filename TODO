@@ -1,0 +1,2 @@
+* Erro ao gravar no banco
+> TypeError: __init__() got an unexpected keyword argument 'safe'
