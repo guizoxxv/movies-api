@@ -1,0 +1,26 @@
+version: "3"
+services:
+  server:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    volumes:
+      - ./server:/usr/src/app
+    working_dir: /usr/src/app
+    ports:
+      - 3011:5000
+    tty: true
+    command: python server.py
+  db:
+    image: mongo:4
+    ports:
+      - 3012:27017
+    volumes:
+      - dbdata:/data/db
+      - ./db:/home/db
+    working_dir: /home/db
+    environment:
+      - TZ=America/Sao_Paulo
+volumes:
+  dbdata:
+    driver: local
