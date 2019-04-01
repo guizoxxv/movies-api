@@ -1,18 +1,46 @@
 from flask import Flask, request, jsonify
 from flask_pymongo import PyMongo
 from bson import ObjectId
+from werkzeug.security import generate_password_hash, check_password_hash
+from flask_jwt_extended import JWTManager, jwt_required, create_access_token
 
 app = Flask(__name__)
 
+app.config['JWT_SECRET_KEY'] = 'secret'
 app.config["MONGO_URI"] = "mongodb://localhost:3012/movies_api"
 
+jwt = JWTManager(app)
 mongo = PyMongo(app)
 
-@app.route('/', methods=['GET'])
-def home():
-    return jsonify({ 'message': 'Hello World' })
+@app.route('/api', methods=['GET'])
+def api():
+    return jsonify({ 'message': 'Welcome to Movies APIs' })
+
+@app.route('/api/login', methods=['POST'])
+def login():
+    login = request.json.get('login', None)
+    password = request.json.get('password', None)
+
+
+    if not login or not password:
+        return jsonify({ 'message': 'Unauthorized' }), 401
+
+    db_users = mongo.db.users
+
+    user = db_users.find_one({ 'login': login })
+
+    if not user:
+        return jsonify({ 'message': 'Invalid credentials' }), 401
+
+    if check_password_hash(user['password'], password):
+        access_token = create_access_token(identity=login)
+
+        return jsonify(access_token=access_token), 200
+    
+    return jsonify({ 'message': 'Invalid credentials' }), 401
 
 @app.route('/api/movies', methods=['GET'])
+@jwt_required
 def list():
     db_movies = mongo.db.movies
 
@@ -26,6 +54,7 @@ def list():
     return jsonify({ 'movies': movies }), 200
 
 @app.route('/api/movies/<movie_id>', methods=['GET'])
+@jwt_required
 def show(movie_id):
     db_movies = mongo.db.movies
     
@@ -34,6 +63,7 @@ def show(movie_id):
     return jsonify({ 'item': movie }), 200
 
 @app.route('/api/movies', methods=['POST'])
+@jwt_required
 def create():
     db_movies = mongo.db.movies
 
@@ -54,6 +84,7 @@ def create():
     }), 201
 
 @app.route('/api/movies/<movie_id>/update', methods=['PUT'])
+@jwt_required
 def update(movie_id):
     db_movies = mongo.db.movies
 
@@ -82,6 +113,7 @@ def update(movie_id):
     }), 200
 
 @app.route('/api/movies/<movie_id>/delete', methods=['DELETE'])
+@jwt_required
 def delete(movie_id):
     db_movies = mongo.db.movies
 
