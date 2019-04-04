@@ -4,7 +4,6 @@ from flask_pymongo import PyMongo
 from bson import ObjectId
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_jwt_extended import JWTManager, jwt_required, create_access_token
-import 
 
 jwt = JWTManager(app)
 mongo = PyMongo(app)
@@ -13,25 +12,47 @@ mongo = PyMongo(app)
 def api():
     return jsonify({ 'message': 'Welcome to Movies APIs' })
 
+@app.route('/api/signin', methods=['POST'])
+def signIn():
+    db_users = mongo.db.users
+
+    user = {
+        'name': request.json['name'],
+        'email': request.json['email'],
+        'password': generate_password_hash(request.json['password']),
+    }
+
+    db_users.insert({ **user })
+    
+    return jsonify({
+        'message': 'User created',
+        'item': {
+            'name': user['name'],
+            'email': user['email'],
+        }
+    }), 201
+
 @app.route('/api/login', methods=['POST'])
 def login():
-    login = request.json.get('login', None)
+    email = request.json.get('email', None)
     password = request.json.get('password', None)
 
-    if not login or not password:
+    if not email or not password:
         return jsonify({ 'message': 'Unauthorized' }), 401
 
     db_users = mongo.db.users
 
-    user = db_users.find_one({ 'login': login })
+    user = db_users.find_one({ 'email': email })
 
     if not user:
         return jsonify({ 'message': 'Invalid credentials' }), 401
 
     if check_password_hash(user['password'], password):
-        access_token = create_access_token(identity=login)
+        access_token = create_access_token(identity=email)
 
-        return jsonify(access_token=access_token), 200
+        return jsonify({
+            'access_token': access_token
+        }), 200
     
     return jsonify({ 'message': 'Invalid credentials' }), 401
 
