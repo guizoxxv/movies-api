@@ -1,4 +1,4 @@
-use movies-api;
+use movies_api;
 
 db.createCollection('movies');
 
