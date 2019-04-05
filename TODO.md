@@ -1,6 +1,5 @@
 * <s>Pagination</s>
 > Test structure does not have pagination
-* Imdb integration
 * Documentation (https://swagger.io/)
 * try catch in route functions
 * validate cast
@@ -8,4 +7,5 @@
 * 401 on wrong authorization headers
 * DRY
 * test wrong http verb
-* validate same email
+* validate same user email
+* return url to get requests on responses

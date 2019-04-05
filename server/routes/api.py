@@ -6,6 +6,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from flask_jwt_extended import JWTManager, jwt_required, create_access_token
 import json
 import datetime
+import requests
 
 jwt = JWTManager(app)
 mongo = PyMongo(app)
@@ -191,3 +192,58 @@ def delete(movie_id):
     return jsonify({
         'message': 'Movie not found',
     }), 404
+
+@app.route('/api/movies/import-from-omdb', methods=['POST'])
+@jwt_required
+def import_from_omdb():
+    movie_id = request.json.get('movie_id', None)
+
+    if not movie_id:
+        return jsonify({ 'message': 'Invalid parameters' }), 422
+
+    # res = requests.get('http://www.omdbapi.com/?apikey=c39ccf6a&t=city+of+god')
+    res = requests.get('http://www.omdbapi.com/?apikey=c39ccf6a&i=' + movie_id)
+
+    if not res.ok:
+        return jsonify({
+            'message': 'An error occurred',
+        }), 500
+    
+    db_movies = mongo.db.movies
+    data = res.json()
+    title = data['Title']
+
+    movies_with_title = db_movies.find({ 'title': title }).count()
+
+    if movies_with_title > 0:
+        return jsonify({
+            'message': 'Duplicate title \'' + title + '\'',
+        }), 409
+
+    movie = {}
+
+    movie['title'] = data['Title']
+    movie['brazilian_title'] = 'undefined'
+    movie['year_of_production'] = data['Year']
+    movie['director'] = data['Director']
+    movie['genre'] = data['Genre']
+    movie['cast'] = []
+
+    for actor in data['Actors'].split(', '):
+        actor_item = {
+            "role": "undefined",
+            "name": actor
+        }
+
+        movie['cast'].append(actor_item)
+
+    db_movies.insert_one(movie)
+
+    created_movie = db_movies.find_one({ 'title': title })
+    created_movie['_id'] = str(created_movie['_id'])
+    
+    return jsonify({
+        'message': 'Movie created',
+        'item': created_movie
+    }), 201
+

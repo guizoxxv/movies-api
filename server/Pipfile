@@ -11,6 +11,7 @@ flask-pymongo = "*"
 flask-jwt-extended = "*"
 flask-testing = "*"
 python-dotenv = "*"
+requests = "*"
 
 [requires]
 python_version = "3.5"

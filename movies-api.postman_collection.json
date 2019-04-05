@@ -221,6 +221,39 @@
 				"description": "Remove a movie from the database."
 			},
 			"response": []
+		},
+		{
+			"name": "import-from-omdb",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"name": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n\t\"movie_id\": \"tt0448115\"\n}"
+				},
+				"url": {
+					"raw": "http://localhost:5000/api/movies/import-from-omdb",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "5000",
+					"path": [
+						"api",
+						"movies",
+						"import-from-omdb"
+					]
+				},
+				"description": "Get a movie informations from OMDB API and insert into new database entry."
+			},
+			"response": []
 		}
 	],
 	"auth": {
@@ -228,7 +261,7 @@
 		"bearer": [
 			{
 				"key": "token",
-				"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJmcmVzaCI6ZmFsc2UsImp0aSI6ImIxYzI0N2U5LTFiYzUtNGFkOC05MTVkLTljODE3MWVkNjAxMCIsImV4cCI6MTU1NDQ4MDI0MSwibmJmIjoxNTU0NDc2NjQxLCJpYXQiOjE1NTQ0NzY2NDEsInR5cGUiOiJhY2Nlc3MiLCJpZGVudGl0eSI6InVzZXIxQGV4YW1wbGUuY29tIn0.NgF1Txi9pVYu02ELYNB1RCs2AST128DFh3a4Pou8W9k",
+				"value": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJmcmVzaCI6ZmFsc2UsImlkZW50aXR5IjoidXNlcjFAZXhhbXBsZS5jb20iLCJ0eXBlIjoiYWNjZXNzIiwiZXhwIjoxNTU0NDg1NTcxLCJuYmYiOjE1NTQ0ODE5NzEsImlhdCI6MTU1NDQ4MTk3MSwianRpIjoiOGM1Zjk4YmYtMTZhOC00OGMzLWJjNmItNzM5MWYxMWJiY2JjIn0.euppnLLFr81WkN1xv-GAaBtbcWbigiIA0gVjqnOiJXY",
 				"type": "string"
 			}
 		]
