@@ -4,6 +4,7 @@ from flask_pymongo import PyMongo
 from bson import ObjectId
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_jwt_extended import JWTManager, jwt_required, create_access_token
+import json
 
 jwt = JWTManager(app)
 mongo = PyMongo(app)
@@ -14,6 +15,13 @@ def api():
 
 @app.route('/api/signin', methods=['POST'])
 def signIn():
+    name = request.json.get('name', None)
+    email = request.json.get('email', None)
+    password = request.json.get('password', None)
+
+    if not name or not email or not password:
+        return jsonify({ 'message': 'Invalid parameters' }), 422
+
     db_users = mongo.db.users
 
     user = {
@@ -38,7 +46,7 @@ def login():
     password = request.json.get('password', None)
 
     if not email or not password:
-        return jsonify({ 'message': 'Unauthorized' }), 401
+        return jsonify({ 'message': 'Invalid parameters' }), 422
 
     db_users = mongo.db.users
 
@@ -60,7 +68,6 @@ def login():
 @jwt_required
 def list():
     db_movies = mongo.db.movies
-
     movies = []
     
     for movie in db_movies.find({}, { '_id': False }):
@@ -74,7 +81,6 @@ def list():
 @jwt_required
 def show(movie_id):
     db_movies = mongo.db.movies
-    
     movie = db_movies.find_one({ '_id': ObjectId(movie_id) }, { '_id': False })
 
     return jsonify({ 'item': movie }), 200
@@ -83,61 +89,73 @@ def show(movie_id):
 @jwt_required
 def create():
     db_movies = mongo.db.movies
+    movie = {}
 
-    movie = {
-        'title': request.json['title'],
-        'brazilian_title': request.json['brazilian_title'],
-        'year_of_production': request.json['year_of_production'],
-        'director': request.json['director'],
-        'genre': request.json['genre'],
-        'cast': request.json['cast']
-    }
+    for prop in ['title', 'brazilian_title', 'year_of_production', 'director', 'genre', 'cast']:
+        if not request.json.get(prop, None):
+            return jsonify({ 'message': 'Invalid parameters' }), 422
 
-    db_movies.insert({ **movie })
+        movie[prop] = request.json[prop]
+    
+    title = request.json.get('title', None)
+    movies_with_title = db_movies.find({ 'title': title }).count()
+
+    if movies_with_title > 0:
+        return jsonify({
+            'message': 'Duplicate title \'' + title + '\'',
+        }), 409
+
+    db_movies.insert(movie)
+
+    created_movie = db_movies.find_one({ 'title': title })
+    created_movie['_id'] = str(created_movie['_id'])
     
     return jsonify({
         'message': 'Movie created',
-        'item': movie
+        'item': created_movie
     }), 201
 
 @app.route('/api/movies/<movie_id>/update', methods=['PUT'])
 @jwt_required
 def update(movie_id):
     db_movies = mongo.db.movies
+    title = request.json.get('title', None)
+    
+    if title:
+        movies_with_title = db_movies.find({ 'title': title }).count()
 
+        if movies_with_title > 0:
+            return jsonify({
+                'message': 'Duplicate title \'' + title + '\'',
+            }), 409
+    
     data = request.get_json()
-    
-    new_movie = { }
+    movie = {}
 
-    if 'title' in data:
-        new_movie['title'] = data['title']
-    if 'brazilian_title' in data:
-        new_movie['brazilian_title'] = data['brazilian_title']
-    if 'year_of_production' in data:
-        new_movie['year_of_production'] = data['year_of_production']
-    if 'director' in data:
-        new_movie['director'] = data['director']
-    if 'genre' in data:
-        new_movie['genre'] = data['genre']
-    if 'cast' in data:
-        new_movie['cast'] = data['cast']
+    for prop in ['title', 'brazilian_title', 'year_of_production', 'director', 'genre', 'cast']:
+        if prop in data:
+            movie[prop] = data[prop]
 
-    db_movies.update_one({ '_id': ObjectId(movie_id) }, { '$set': { **new_movie } })
-    
+    db_movies.update_one({ '_id': ObjectId(movie_id) }, { '$set': movie })
+
+    updated_movie = db_movies.find_one({ '_id': ObjectId(movie_id) })
+    updated_movie['_id'] = str(updated_movie['_id'])
+
     return jsonify({
         'message': 'Movie updated',
-        'item': new_movie
+        'item': updated_movie
     }), 200
 
 @app.route('/api/movies/<movie_id>/delete', methods=['DELETE'])
 @jwt_required
 def delete(movie_id):
     db_movies = mongo.db.movies
+    deleted_movie = db_movies.find_one({ '_id': ObjectId(movie_id) })
+    deleted_movie['_id'] = str(deleted_movie['_id'])
 
-    movie = db_movies.find_one({ '_id': ObjectId(movie_id) }, { '_id': False })
     db_movies.delete_one({ '_id': ObjectId(movie_id) })
 
     return jsonify({
         'message': 'Movie deleted',
-        'item': movie
+        'item': deleted_movie
     })
