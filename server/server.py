@@ -1,8 +1,12 @@
 from flask import Flask
+from dotenv import load_dotenv
+import os
+
+load_dotenv()
 
 app = Flask(__name__)
 
-app.config.from_pyfile('config/app.py')
+app.config.from_object('config.' + os.getenv('APP_CONFIG'))
 
 from routes.api import *
 

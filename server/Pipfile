@@ -9,6 +9,8 @@ verify_ssl = true
 flask = "*"
 flask-pymongo = "*"
 flask-jwt-extended = "*"
+flask-testing = "*"
+python-dotenv = "*"
 
 [requires]
 python_version = "3.5"
