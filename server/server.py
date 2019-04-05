@@ -7,4 +7,4 @@ app.config.from_pyfile('config/app.py')
 from routes.api import *
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(debug=app.config['DEBUG'])
