@@ -5,6 +5,7 @@ from bson import ObjectId
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_jwt_extended import JWTManager, jwt_required, create_access_token
 import json
+import datetime
 
 jwt = JWTManager(app)
 mongo = PyMongo(app)
@@ -30,7 +31,7 @@ def signIn():
         'password': generate_password_hash(request.json['password']),
     }
 
-    db_users.insert({ **user })
+    db_users.insert_one({ **user })
     
     return jsonify({
         'message': 'User created',
@@ -56,7 +57,7 @@ def login():
         return jsonify({ 'message': 'Invalid credentials' }), 401
 
     if check_password_hash(user['password'], password):
-        access_token = create_access_token(identity=email)
+        access_token = create_access_token(identity=email, expires_delta=datetime.timedelta(hours=1))
 
         return jsonify({
             'access_token': access_token
@@ -80,10 +81,18 @@ def list():
 @app.route('/api/movies/<movie_id>', methods=['GET'])
 @jwt_required
 def show(movie_id):
-    db_movies = mongo.db.movies
-    movie = db_movies.find_one({ '_id': ObjectId(movie_id) }, { '_id': False })
+    if not ObjectId.is_valid(movie_id):
+        return jsonify({ 'message': 'Invalid parameters' }), 422
 
-    return jsonify({ 'item': movie }), 200
+    db_movies = mongo.db.movies
+    movie = db_movies.find_one({ '_id': ObjectId(movie_id) })
+    
+    if movie:
+        movie['_id'] = str(movie['_id'])
+
+        return jsonify({ 'item': movie }), 200
+
+    return jsonify({ 'message': "Movie not found" }), 404
 
 @app.route('/api/movies', methods=['POST'])
 @jwt_required
@@ -105,7 +114,7 @@ def create():
             'message': 'Duplicate title \'' + title + '\'',
         }), 409
 
-    db_movies.insert(movie)
+    db_movies.insert_one(movie)
 
     created_movie = db_movies.find_one({ 'title': title })
     created_movie['_id'] = str(created_movie['_id'])
@@ -118,8 +127,24 @@ def create():
 @app.route('/api/movies/<movie_id>/update', methods=['PUT'])
 @jwt_required
 def update(movie_id):
+    if not ObjectId.is_valid(movie_id):
+        return jsonify({ 'message': 'Invalid parameters' }), 422
+
+    if not request.data:
+        return jsonify({ 'message': 'Invalid parameters' }), 422
+
+    data = request.get_json()
+
+    if len(data) == 0:
+        return jsonify({ 'message': 'Invalid parameters' }), 422
+
     db_movies = mongo.db.movies
     title = request.json.get('title', None)
+
+    if db_movies.find({ '_id': ObjectId(movie_id) }).count() == 0:
+        return jsonify({
+            'message': 'Movie not found',
+        }), 404
     
     if title:
         movies_with_title = db_movies.find({ 'title': title }).count()
@@ -128,8 +153,7 @@ def update(movie_id):
             return jsonify({
                 'message': 'Duplicate title \'' + title + '\'',
             }), 409
-    
-    data = request.get_json()
+
     movie = {}
 
     for prop in ['title', 'brazilian_title', 'year_of_production', 'director', 'genre', 'cast']:
@@ -138,8 +162,7 @@ def update(movie_id):
 
     db_movies.update_one({ '_id': ObjectId(movie_id) }, { '$set': movie })
 
-    updated_movie = db_movies.find_one({ '_id': ObjectId(movie_id) })
-    updated_movie['_id'] = str(updated_movie['_id'])
+    updated_movie = db_movies.find_one({ '_id': ObjectId(movie_id) }, { '_id': False })
 
     return jsonify({
         'message': 'Movie updated',
@@ -149,13 +172,22 @@ def update(movie_id):
 @app.route('/api/movies/<movie_id>/delete', methods=['DELETE'])
 @jwt_required
 def delete(movie_id):
+    if not ObjectId.is_valid(movie_id):
+        return jsonify({ 'message': 'Invalid parameters' }), 422
+
     db_movies = mongo.db.movies
     deleted_movie = db_movies.find_one({ '_id': ObjectId(movie_id) })
-    deleted_movie['_id'] = str(deleted_movie['_id'])
 
-    db_movies.delete_one({ '_id': ObjectId(movie_id) })
+    if deleted_movie:
+        deleted_movie['_id'] = str(deleted_movie['_id'])
 
+        db_movies.delete_one({ '_id': ObjectId(movie_id) })
+
+        return jsonify({
+            'message': 'Movie deleted',
+            'item': deleted_movie
+        }), 200
+    
     return jsonify({
-        'message': 'Movie deleted',
-        'item': deleted_movie
-    })
+        'message': 'Movie not found',
+    }), 404
