@@ -221,7 +221,6 @@ def import_from_omdb():
     if not movie_id:
         return jsonify({ 'message': 'Invalid parameters' }), 422
 
-    # res = requests.get('http://www.omdbapi.com/?apikey=c39ccf6a&t=city+of+god')
     res = requests.get('http://www.omdbapi.com/?apikey=c39ccf6a&i=' + movie_id)
 
     if not res.ok:
