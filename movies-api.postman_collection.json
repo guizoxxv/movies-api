@@ -6,7 +6,7 @@
 	},
 	"item": [
 		{
-			"name": "signin",
+			"name": "register",
 			"request": {
 				"method": "POST",
 				"header": [
@@ -22,7 +22,7 @@
 					"raw": "{\n\t\"name\": \"User 1\",\n\t\"email\": \"user1@example.com\",\n\t\"password\": \"secret\"\n}"
 				},
 				"url": {
-					"raw": "http://localhost:5000/api/signin",
+					"raw": "http://localhost:5000/api/register",
 					"protocol": "http",
 					"host": [
 						"localhost"
@@ -30,7 +30,7 @@
 					"port": "5000",
 					"path": [
 						"api",
-						"signin"
+						"register"
 					]
 				},
 				"description": "Insert a new user into the database."

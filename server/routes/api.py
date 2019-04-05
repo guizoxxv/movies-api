@@ -15,8 +15,16 @@ mongo = PyMongo(app)
 def api():
     return jsonify({ 'message': 'Welcome to Movies APIs' })
 
-@app.route('/api/signin', methods=['POST'])
-def signIn():
+@app.route('/api/register', methods=['POST'])
+def register():
+    if not request.data:
+        return jsonify({ 'message': 'Invalid parameters' }), 422
+
+    data = request.get_json()
+
+    if len(data) == 0:
+        return jsonify({ 'message': 'Invalid parameters' }), 422
+
     name = request.json.get('name', None)
     email = request.json.get('email', None)
     password = request.json.get('password', None)
@@ -25,6 +33,13 @@ def signIn():
         return jsonify({ 'message': 'Invalid parameters' }), 422
 
     db_users = mongo.db.users
+
+    users_with_email = db_users.find({ 'email': email }).count()
+
+    if users_with_email > 0:
+        return jsonify({
+            'message': 'Duplicate email \'' + email + '\'',
+        }), 409
 
     user = {
         'name': request.json['name'],
@@ -105,6 +120,11 @@ def create():
         if not request.json.get(prop, None):
             return jsonify({ 'message': 'Invalid parameters' }), 422
 
+        if prop == 'cast':
+            for actor in request.json[prop]:
+                if not 'name' in actor or not 'role' in actor:
+                    return jsonify({ 'message': 'Invalid parameters' }), 422
+        
         movie[prop] = request.json[prop]
     
     title = request.json.get('title', None)

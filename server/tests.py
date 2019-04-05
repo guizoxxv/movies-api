@@ -86,6 +86,56 @@ class AppTestCase(BaseTestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json.get('message', None), 'Welcome to Movies APIs')
+    
+    def test_register(self):
+        # Register success
+        response1 = self.client.post(
+            '/api/register',
+            data=json.dumps({
+                'name': 'User 3',
+                'email': 'user3@example.com',
+                'password': 'secret'
+            }),
+            content_type="application/json"
+        )
+
+        self.assertEqual(response1.status_code, 201)
+        self.assertEqual(response1.json.get('message', None), 'User created')
+
+        # Register duplicate
+        response2 = self.client.post(
+            '/api/register',
+            data=json.dumps({
+                'name': 'User 1',
+                'email': 'user1@example.com',
+                'password': 'secret'
+            }),
+            content_type="application/json"
+        )
+
+        self.assertEqual(response2.status_code, 409)
+        self.assertEqual(response2.json.get('message', None), 'Duplicate email \'user1@example.com\'')
+
+        # Register missing data
+        response3 = self.client.post(
+            '/api/register',
+            content_type="application/json"
+        )
+        
+        self.assertEqual(response3.status_code, 422)
+        self.assertEqual(response3.json.get('message', None), 'Invalid parameters')
+
+        # Register invalid data
+        response4 = self.client.post(
+            '/api/register',
+            data=json.dumps({
+                'name': 'User 1',
+            }),
+            content_type="application/json"
+        )
+        
+        self.assertEqual(response4.status_code, 422)
+        self.assertEqual(response4.json.get('message', None), 'Invalid parameters')
 
     def test_login(self):
         # Login success
@@ -300,12 +350,37 @@ class AppTestCase(BaseTestCase):
         self.assertEqual(response5.json.get('msg', None), 'Missing Authorization Header')
 
         # Incorrect Authorizarion
-        response6 = self.client.get(
+        response6 = self.client.post(
             '/api/movies',
             headers={'Authorization': 'Bearer 123456' },
             content_type="application/json")
         
         self.assertEqual(response6.status_code, 422)
+
+        # Invalid cast
+        response7 = self.client.post(
+            '/api/movies',
+            headers={'Authorization': 'Bearer ' + token },
+            data=json.dumps({
+                "title": "Get Out",
+                "brazilian_title": "Corra!",
+                "year_of_production": 2017,
+                "director": "Jordan Peele",
+                "genre": "Horror",
+                "cast": [
+                    {
+                        "role": "Chris Washington",
+                    },
+                    {
+                        "role": "Rose Armitage",
+                        "name": "Allison Williams"
+                    }
+                ]
+            }),
+            content_type="application/json")
+        
+        self.assertEqual(response7.status_code, 422)
+        self.assertEqual(response7.json.get('message', None), 'Invalid parameters')
 
     def test_update(self):
         response1 = self.client.post(
