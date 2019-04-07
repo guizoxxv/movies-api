@@ -29,6 +29,8 @@ Siga os passos:
 
 * `python server.py`
 
+> Por padrão a aplicação será iniciada na porta 5000.
+
 ## Funcionamento
 
 Para utilizar a aplicação é necessário primeiro registrar um usuário no banco de dados através da rota `/api/register`. Feito isto é possível utilizar as credencias deste usuário para receber um token JWT de autorização através da rota `/api/login`. Este token é utilizado header da requisição com a chave `Authorization` em endpoints que exigem autorização.
@@ -79,14 +81,21 @@ Para utilizar a aplicação é necessário primeiro registrar um usuário no ban
 
 9. **GET /api/movies/import-from-omdb/** - <span style="color:yellow">Requer autorização</span> - Cria um novo filme com dados do OMDb;
 
-> Campos obrigatórios - Formato JSON
+> Campos obrigatórios - Formato JSON:
 > * `movie_id` (String) - id do filme na base do [IMDb](https://www.imdb.com/).
+
+## Postman
+
+Para testar os endpoints com o Postman é necessário importar os arquivos para `collection` e `environment` na pasta `postman`.
+Por padrão o endereço base da aplicação é `http://localhost:5000` mas é possível especificar outro alterando a variável `baseUrl` da coleção.
+Rotas que necessitam autorização utilizam a variável de ambiente `token` que é definida na rota `login`.
+Os endpoints que enviam dados no corpo da requisição possuem exemplos.
 
 ## Testes
 
 Siga os passos:
 
-1. Dfinir a variável de ambiente `APP_CONFIG="TestConfig"` no arquivo `.env`
+1. Definir a variável de ambiente `APP_CONFIG="TestConfig"` no arquivo `.env`
 2. Executar o comando abaixo para executar os testes unitários:
 
 * `python tests.py -v`
