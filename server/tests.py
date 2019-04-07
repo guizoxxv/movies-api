@@ -69,6 +69,37 @@ class BaseTestCase(TestCase):
         mongo.db.movies.drop()
 
 class AppTestCase(BaseTestCase):
+    token = None
+
+    def setToken(self):
+        response = self.client.post(
+            '/api/login',
+            data=json.dumps({
+                'email': 'user1@example.com',
+                'password': 'secret'
+            }),
+            content_type="application/json"
+        )
+
+        self.token = response.json.get('access_token', None)
+    
+    def checkAuth(self, method, url):
+        # Missing Authorizarion
+        response1 = getattr(self.client, method)(
+            url,
+            content_type="application/json"
+        )
+        
+        self.assertEqual(response1.status_code, 401)
+        self.assertEqual(response1.json.get('msg', None), 'Missing Authorization Header')
+
+        # Incorrect Authorizarion
+        response2 = getattr(self.client, method)(
+            url,
+            headers={'Authorization': 'Bearer 123456' },
+            content_type="application/json")
+        
+        self.assertEqual(response2.status_code, 422)
 
     def test_api(self):
         response = self.client.get('/api', content_type="application/json")
@@ -162,114 +193,70 @@ class AppTestCase(BaseTestCase):
         self.assertEqual(response3.status_code, 422)
 
     def test_list(self):
-        response1 = self.client.post(
-            '/api/login',
-            data=json.dumps({
-                'email': 'user1@example.com',
-                'password': 'secret'
-            }),
-            content_type="application/json"
-        )
+        method = 'get'
+        url = 'api/movies'
 
-        token = response1.json.get('access_token', None)
+        self.setToken()
+        self.checkAuth(method, url)
 
         # Correct Authorizarion
-        response2 = self.client.get(
-            '/api/movies',
-            headers={'Authorization': 'Bearer ' + token },
-            content_type="application/json")
+        response1 = getattr(self.client, method)(
+            url,
+            headers={ 'Authorization': 'Bearer ' + self.token },
+            content_type="application/json"
+        )
         
-        self.assertEqual(response2.status_code, 200)
-        self.assertTrue(response2.json.get('movies', None))
-
-        # Missing Authorizarion
-        response3 = self.client.get(
-            '/api/movies',
-            content_type="application/json")
-        
-        self.assertEqual(response3.status_code, 401)
-        self.assertEqual(response3.json.get('msg', None), 'Missing Authorization Header')
-
-        # Incorrect Authorizarion
-        response3 = self.client.get(
-            '/api/movies',
-            headers={'Authorization': 'Bearer 123456' },
-            content_type="application/json")
-        
-        self.assertEqual(response3.status_code, 422)
+        self.assertEqual(response1.status_code, 200)
+        self.assertTrue(response1.json.get('movies', None))
 
     def test_show(self):
-        response1 = self.client.post(
-            '/api/login',
-            data=json.dumps({
-                'email': 'user1@example.com',
-                'password': 'secret'
-            }),
-            content_type="application/json"
-        )
+        method = 'get'
+        url = 'api/movies/5ca6a020d7d19372e81c582c'
 
-        token = response1.json.get('access_token', None)
+        self.setToken()
+        self.checkAuth(method, url)
 
         # Correct Authorizarion and movie_id
-        response2 = self.client.get(
-            '/api/movies/5ca6a020d7d19372e81c582c',
-            headers={'Authorization': 'Bearer ' + token },
+        response1 = getattr(self.client, method)(
+            url,
+            headers={ 'Authorization': 'Bearer ' + self.token },
             content_type="application/json"
         )
         
-        self.assertEqual(response2.status_code, 200)
-        self.assertTrue(response2.json.get('item', None))
+        self.assertEqual(response1.status_code, 200)
+        self.assertTrue(response1.json.get('item', None))
 
         # Correct Authorizarion, invalid movie_id
-        response3 = self.client.get(
+        response2 = getattr(self.client, method)(
             '/api/movies/123456',
-            headers={'Authorization': 'Bearer ' + token },
-            content_type="application/json")
-        
-        self.assertEqual(response3.status_code, 422)
-        self.assertEqual(response3.json.get('message', None), 'Invalid parameters')
-
-        # Correct Authorizarion, incorrect movie_id
-        response4 = self.client.get(
-            '/api/movies/507f191e810c19729de860ea',
-            headers={'Authorization': 'Bearer ' + token },
-            content_type="application/json")
-        
-        self.assertEqual(response4.status_code, 404)
-        self.assertEqual(response4.json.get('message', None), 'Movie not found')
-
-        # Missing Authorizarion
-        response5 = self.client.get(
-            '/api/movies',
-            content_type="application/json")
-        
-        self.assertEqual(response5.status_code, 401)
-        self.assertEqual(response5.json.get('msg', None), 'Missing Authorization Header')
-
-        # Incorrect Authorizarion
-        response6 = self.client.get(
-            '/api/movies/5ca6a020d7d19372e81c582c',
-            headers={'Authorization': 'Bearer 123456' },
-            content_type="application/json")
-        
-        self.assertEqual(response6.status_code, 422)
-
-    def test_create(self):
-        response1 = self.client.post(
-            '/api/login',
-            data=json.dumps({
-                'email': 'user1@example.com',
-                'password': 'secret'
-            }),
+            headers={ 'Authorization': 'Bearer ' + self.token },
             content_type="application/json"
         )
+        
+        self.assertEqual(response2.status_code, 422)
+        self.assertEqual(response2.json.get('message', None), 'Invalid parameters')
 
-        token = response1.json.get('access_token', None)
+        # Correct Authorizarion, incorrect movie_id
+        response3 = getattr(self.client, method)(
+            '/api/movies/507f191e810c19729de860ea',
+            headers={ 'Authorization': 'Bearer ' + self.token },
+            content_type="application/json"
+        )
+        
+        self.assertEqual(response3.status_code, 404)
+        self.assertEqual(response3.json.get('message', None), 'Movie not found')
+
+    def test_create(self):
+        method = 'post'
+        url = '/api/movies'
+
+        self.setToken()
+        self.checkAuth(method, url)
 
         # Correct Authorizarion and movie
-        response2 = self.client.post(
-            '/api/movies',
-            headers={'Authorization': 'Bearer ' + token },
+        response1 = getattr(self.client, method)(
+            url,
+            headers={'Authorization': 'Bearer ' + self.token },
             data=json.dumps({
                 "title": "Get Out",
                 "brazilian_title": "Corra!",
@@ -287,15 +274,16 @@ class AppTestCase(BaseTestCase):
                     }
                 ]
             }),
-            content_type="application/json")
+            content_type="application/json"
+        )
         
-        self.assertEqual(response2.status_code, 201)
-        self.assertEqual(response2.json.get('message', None), 'Movie created')
+        self.assertEqual(response1.status_code, 201)
+        self.assertEqual(response1.json.get('message', None), 'Movie created')
 
         # Correct Authorizarion, duplicate movie title
-        response3 = self.client.post(
-            '/api/movies',
-            headers={'Authorization': 'Bearer ' + token },
+        response2 = getattr(self.client, method)(
+            url,
+            headers={ 'Authorization': 'Bearer ' + self.token },
             data=json.dumps({
                 "title": "City of God",
                 "brazilian_title": "Cidade de Deus",
@@ -315,41 +303,26 @@ class AppTestCase(BaseTestCase):
             }),
             content_type="application/json")
         
-        self.assertEqual(response3.status_code, 409)
-        self.assertEqual(response3.json.get('message', None), 'Duplicate title \'City of God\'')
+        self.assertEqual(response2.status_code, 409)
+        self.assertEqual(response2.json.get('message', None), 'Duplicate title \'City of God\'')
 
         # Correct Authorizarion, incorrect movie data
-        response4 = self.client.post(
+        response3 = getattr(self.client, method)(
             '/api/movies',
-            headers={'Authorization': 'Bearer ' + token },
+            headers={ 'Authorization': 'Bearer ' + self.token },
             data=json.dumps({
                 "title": "Get Out",
             }),
-            content_type="application/json")
+            content_type="application/json"
+        )
         
-        self.assertEqual(response4.status_code, 422)
-        self.assertEqual(response4.json.get('message', None), 'Invalid parameters')
-
-        # Missing Authorizarion
-        response5 = self.client.get(
-            '/api/movies',
-            content_type="application/json")
-        
-        self.assertEqual(response5.status_code, 401)
-        self.assertEqual(response5.json.get('msg', None), 'Missing Authorization Header')
-
-        # Incorrect Authorizarion
-        response6 = self.client.post(
-            '/api/movies',
-            headers={'Authorization': 'Bearer 123456' },
-            content_type="application/json")
-        
-        self.assertEqual(response6.status_code, 422)
+        self.assertEqual(response3.status_code, 422)
+        self.assertEqual(response3.json.get('message', None), 'Invalid parameters')
 
         # Invalid cast
-        response7 = self.client.post(
-            '/api/movies',
-            headers={'Authorization': 'Bearer ' + token },
+        response4 = getattr(self.client, method)(
+            url,
+            headers={ 'Authorization': 'Bearer ' + self.token },
             data=json.dumps({
                 "title": "Get Out",
                 "brazilian_title": "Corra!",
@@ -366,153 +339,114 @@ class AppTestCase(BaseTestCase):
                     }
                 ]
             }),
-            content_type="application/json")
-        
-        self.assertEqual(response7.status_code, 422)
-        self.assertEqual(response7.json.get('message', None), 'Invalid parameters')
-
-    def test_update(self):
-        response1 = self.client.post(
-            '/api/login',
-            data=json.dumps({
-                'email': 'user1@example.com',
-                'password': 'secret'
-            }),
-            content_type="application/json"
-        )
-
-        token = response1.json.get('access_token', None)
-
-        # Correct Authorizarion, movie_id and data
-        response2 = self.client.put(
-            '/api/movies/5ca6a020d7d19372e81c582c/update',
-            headers={'Authorization': 'Bearer ' + token },
-            data=json.dumps({
-                'year_of_production': 2000,
-            }),
-            content_type="application/json"
-        )
-        
-        self.assertEqual(response2.status_code, 200)
-        self.assertEqual(response2.json.get('message', None), 'Movie updated')
-
-        # Correct Authorizarion, movie_id, empty data
-        response3 = self.client.put(
-            '/api/movies/5ca6a020d7d19372e81c582c/update',
-            headers={'Authorization': 'Bearer ' + token },
-            data=json.dumps({}),
-            content_type="application/json"
-        )
-        
-        self.assertEqual(response3.status_code, 422)
-        self.assertEqual(response3.json.get('message', None), 'Invalid parameters')
-
-        # Correct Authorizarion, movie_id, missing data
-        response4 = self.client.put(
-            '/api/movies/5ca6a020d7d19372e81c582c/update',
-            headers={'Authorization': 'Bearer ' + token },
             content_type="application/json"
         )
         
         self.assertEqual(response4.status_code, 422)
         self.assertEqual(response4.json.get('message', None), 'Invalid parameters')
 
-        # Correct Authorizarion, invalid movie_id
-        response5 = self.client.put(
-            '/api/movies/123456/update',
-            headers={'Authorization': 'Bearer ' + token },
+    def test_update(self):
+        method = 'put'
+        url = 'api/movies/5ca6a020d7d19372e81c582c/update'
+
+        self.setToken()
+        self.checkAuth(method, url)
+
+        # Correct Authorizarion, movie_id and data
+        response1 = getattr(self.client, method)(
+            url,
+            headers={ 'Authorization': 'Bearer ' + self.token },
             data=json.dumps({
                 'year_of_production': 2000,
             }),
             content_type="application/json"
         )
         
-        self.assertEqual(response5.status_code, 422)
-        self.assertEqual(response5.json.get('message', None), 'Invalid parameters')
+        self.assertEqual(response1.status_code, 200)
+        self.assertEqual(response1.json.get('message', None), 'Movie updated')
 
-        # Correct Authorizarion, incorrect movie_id
-        response6 = self.client.put(
-            '/api/movies/507f191e810c19729de860ea/update',
-            headers={'Authorization': 'Bearer ' + token },
-            data=json.dumps({
-                'year_of_production': 2000,
-            }),
-            content_type="application/json")
-        
-        self.assertEqual(response6.status_code, 404)
-        self.assertEqual(response6.json.get('message', None), 'Movie not found')
-
-        # Missing Authorizarion
-        response7 = self.client.put(
-            '/api/movies/5ca6a020d7d19372e81c582c/update',
-            content_type="application/json")
-        
-        self.assertEqual(response7.status_code, 401)
-        self.assertEqual(response7.json.get('msg', None), 'Missing Authorization Header')
-
-        # Incorrect Authorizarion
-        response8 = self.client.put(
-            '/api/movies/5ca6a020d7d19372e81c582c/update',
-            headers={'Authorization': 'Bearer 123456' },
-            content_type="application/json")
-        
-        self.assertEqual(response8.status_code, 422)
-
-    def test_delete(self):
-        response1 = self.client.post(
-            '/api/login',
-            data=json.dumps({
-                'email': 'user1@example.com',
-                'password': 'secret'
-            }),
-            content_type="application/json"
-        )
-
-        token = response1.json.get('access_token', None)
-
-        # Correct Authorizarion and movie_id
-        response2 = self.client.delete(
-            '/api/movies/5ca6a020d7d19372e81c582c/delete',
-            headers={'Authorization': 'Bearer ' + token },
+        # Correct Authorizarion, movie_id, empty data
+        response2 = getattr(self.client, method)(
+            url,
+            headers={ 'Authorization': 'Bearer ' + self.token },
+            data=json.dumps({}),
             content_type="application/json"
         )
         
-        self.assertEqual(response2.status_code, 200)
-        self.assertTrue(response2.json.get('item', None))
+        self.assertEqual(response2.status_code, 422)
+        self.assertEqual(response2.json.get('message', None), 'Invalid parameters')
 
-        # Correct Authorizarion, invalid movie_id
-        response3 = self.client.delete(
-            '/api/movies/123456/delete',
-            headers={'Authorization': 'Bearer ' + token },
-            content_type="application/json")
+        # Correct Authorizarion, movie_id, missing data
+        response3 = getattr(self.client, method)(
+            url,
+            headers={ 'Authorization': 'Bearer ' + self.token },
+            content_type="application/json"
+        )
         
         self.assertEqual(response3.status_code, 422)
         self.assertEqual(response3.json.get('message', None), 'Invalid parameters')
 
+        # Correct Authorizarion, invalid movie_id
+        response4 = getattr(self.client, method)(
+            '/api/movies/123456/update',
+            headers={ 'Authorization': 'Bearer ' + self.token },
+            data=json.dumps({
+                'year_of_production': 2000,
+            }),
+            content_type="application/json"
+        )
+        
+        self.assertEqual(response4.status_code, 422)
+        self.assertEqual(response4.json.get('message', None), 'Invalid parameters')
+
         # Correct Authorizarion, incorrect movie_id
-        response4 = self.client.delete(
+        response5 = getattr(self.client, method)(
+            '/api/movies/507f191e810c19729de860ea/update',
+            headers={ 'Authorization': 'Bearer ' + self.token },
+            data=json.dumps({
+                'year_of_production': 2000,
+            }),
+            content_type="application/json")
+        
+        self.assertEqual(response5.status_code, 404)
+        self.assertEqual(response5.json.get('message', None), 'Movie not found')
+
+    def test_delete(self):
+        method = 'delete'
+        url = 'api/movies/5ca6a020d7d19372e81c582c/delete'
+
+        self.setToken()
+        self.checkAuth(method, url)
+
+        # Correct Authorizarion and movie_id
+        response1 = getattr(self.client, method)(
+            url,
+            headers={ 'Authorization': 'Bearer ' + self.token },
+            content_type="application/json"
+        )
+        
+        self.assertEqual(response1.status_code, 200)
+        self.assertTrue(response1.json.get('item', None))
+
+        # Correct Authorizarion, invalid movie_id
+        response2 = getattr(self.client, method)(
+            '/api/movies/123456/delete',
+            headers={ 'Authorization': 'Bearer ' + self.token },
+            content_type="application/json"
+        )
+        
+        self.assertEqual(response2.status_code, 422)
+        self.assertEqual(response2.json.get('message', None), 'Invalid parameters')
+
+        # Correct Authorizarion, incorrect movie_id
+        response3 = getattr(self.client, method)(
             '/api/movies/507f191e810c19729de860ea/delete',
-            headers={'Authorization': 'Bearer ' + token },
-            content_type="application/json")
+            headers={ 'Authorization': 'Bearer ' + self.token },
+            content_type="application/json"
+        )
         
-        self.assertEqual(response4.status_code, 404)
-        self.assertEqual(response4.json.get('message', None), 'Movie not found')
-
-        # Missing Authorizarion
-        response5 = self.client.delete(
-            '/api/movies/5ca6a020d7d19372e81c582c/delete',
-            content_type="application/json")
-        
-        self.assertEqual(response5.status_code, 401)
-        self.assertEqual(response5.json.get('msg', None), 'Missing Authorization Header')
-
-        # Incorrect Authorizarion
-        response6 = self.client.delete(
-            '/api/movies/5ca6a020d7d19372e81c582c/delete',
-            headers={'Authorization': 'Bearer 123456' },
-            content_type="application/json")
-        
-        self.assertEqual(response6.status_code, 422)
+        self.assertEqual(response3.status_code, 404)
+        self.assertEqual(response3.json.get('message', None), 'Movie not found')
 
 if __name__ == '__main__':
     unittest.main()
