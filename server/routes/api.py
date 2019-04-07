@@ -9,25 +9,17 @@ import requests
 
 jwt = JWTManager(app)
 
-def checkData(request, props, required=True):
-    if not request.data:
-        return jsonify({ 'message': 'Invalid parameters' }), 422
+@app.errorhandler(404)
+def not_found(error):
+    return jsonify({ 'message': 'Not found' }), 404
 
-    if len(request.get_json()) == 0:
-        return jsonify({ 'message': 'Invalid parameters' }), 422
+@app.errorhandler(405)
+def method_not_allowed(error):
+    return jsonify({ 'message': 'Method not allowed' }), 405
 
-    if required:
-        for prop in props:
-            if not request.json.get(prop, None):
-                return jsonify({ 'message': 'Invalid parameters' }), 422
-
-    return None
-
-def checkParam(param):
-    if not ObjectId.is_valid(param):
-        return jsonify({ 'message': 'Invalid parameters' }), 422
-
-    return None
+@app.errorhandler(500)
+def internal_server_error(error):
+    return jsonify({ 'message': 'Internal server error' }), 500
 
 @app.route('/api', methods=['GET'])
 def api():
@@ -35,7 +27,7 @@ def api():
 
 @app.route('/api/register', methods=['POST'])
 def register():
-    checkDataResult = checkData(request.data, ['name', 'email', 'password'])
+    checkDataResult = checkData(request, ['name', 'email', 'password'])
 
     if checkDataResult:
         return checkDataResult
@@ -69,7 +61,7 @@ def register():
 
 @app.route('/api/login', methods=['POST'])
 def login():
-    checkDataResult = checkData(request.data, ['email', 'password'])
+    checkDataResult = checkData(request, ['email', 'password'])
 
     if checkDataResult:
         return checkDataResult
@@ -128,7 +120,7 @@ def show(movie_id):
 def create():
     props = ['title', 'brazilian_title', 'year_of_production', 'director', 'genre', 'cast']
 
-    checkDataResult = checkData(request.data, props)
+    checkDataResult = checkData(request, props)
     
     if checkDataResult:
         return checkDataResult
@@ -241,7 +233,7 @@ def import_from_omdb():
     if not movie_id:
         return jsonify({ 'message': 'Invalid parameters' }), 422
 
-    res = requests.get('http://www.omdbapi.com/?apikey=c39ccf6a&i=' + movie_id)
+    res = requests.get('http://www.omdbapi.com/?apikey=' + os.getenv('OMDB_API_KEY') + '&i=' + movie_id)
 
     if not res.ok:
         return jsonify({
@@ -250,13 +242,12 @@ def import_from_omdb():
     
     db_movies = mongo.db.movies
     data = res.json()
-    title = data['Title']
 
-    movies_with_title = db_movies.find({ 'title': title }).count()
+    movies_with_title = db_movies.find({ 'title': data['Title'] }).count()
 
     if movies_with_title > 0:
         return jsonify({
-            'message': 'Duplicate title \'' + title + '\'',
+            'message': 'Duplicate title \'' + data['Title'] + '\'',
         }), 409
 
     movie = {}
@@ -278,10 +269,30 @@ def import_from_omdb():
 
     db_movies.insert_one(movie)
 
-    created_movie = db_movies.find_one({ 'title': title })
+    created_movie = db_movies.find_one({ 'title': data['Title'] })
     created_movie['_id'] = str(created_movie['_id'])
     
     return jsonify({
         'message': 'Movie created',
         'item': created_movie
     }), 201
+
+def checkData(request, props, required=True):
+    if not request.data:
+        return jsonify({ 'message': 'Invalid parameters' }), 422
+
+    if len(request.get_json()) == 0:
+        return jsonify({ 'message': 'Invalid parameters' }), 422
+
+    if required:
+        for prop in props:
+            if not request.json.get(prop, None):
+                return jsonify({ 'message': 'Invalid parameters' }), 422
+
+    return None
+
+def checkParam(param):
+    if not ObjectId.is_valid(param):
+        return jsonify({ 'message': 'Invalid parameters' }), 422
+
+    return None
