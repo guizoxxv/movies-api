@@ -9,40 +9,52 @@ import requests
 
 jwt = JWTManager(app)
 
+def checkData(request, props, required=True):
+    if not request.data:
+        return jsonify({ 'message': 'Invalid parameters' }), 422
+
+    if len(request.get_json()) == 0:
+        return jsonify({ 'message': 'Invalid parameters' }), 422
+
+    if required:
+        for prop in props:
+            if not request.json.get(prop, None):
+                return jsonify({ 'message': 'Invalid parameters' }), 422
+
+    return None
+
+def checkParam(param):
+    if not ObjectId.is_valid(param):
+        return jsonify({ 'message': 'Invalid parameters' }), 422
+
+    return None
+
 @app.route('/api', methods=['GET'])
 def api():
     return jsonify({ 'message': 'Welcome to Movies APIs' })
 
 @app.route('/api/register', methods=['POST'])
 def register():
-    if not request.data:
-        return jsonify({ 'message': 'Invalid parameters' }), 422
+    checkDataResult = checkData(request.data, ['name', 'email', 'password'])
+
+    if checkDataResult:
+        return checkDataResult
 
     data = request.get_json()
 
-    if len(data) == 0:
-        return jsonify({ 'message': 'Invalid parameters' }), 422
-
-    name = request.json.get('name', None)
-    email = request.json.get('email', None)
-    password = request.json.get('password', None)
-
-    if not name or not email or not password:
-        return jsonify({ 'message': 'Invalid parameters' }), 422
-
     db_users = mongo.db.users
 
-    users_with_email = db_users.find({ 'email': email }).count()
+    users_with_email = db_users.find({ 'email': data['email'] }).count()
 
     if users_with_email > 0:
         return jsonify({
-            'message': 'Duplicate email \'' + email + '\'',
+            'message': 'Duplicate email \'' + data['email'] + '\'',
         }), 409
 
     user = {
-        'name': request.json['name'],
-        'email': request.json['email'],
-        'password': generate_password_hash(request.json['password']),
+        'name': data['name'],
+        'email': data['email'],
+        'password': generate_password_hash(data['password']),
     }
 
     db_users.insert_one({ **user })
@@ -57,21 +69,22 @@ def register():
 
 @app.route('/api/login', methods=['POST'])
 def login():
-    email = request.json.get('email', None)
-    password = request.json.get('password', None)
+    checkDataResult = checkData(request.data, ['email', 'password'])
 
-    if not email or not password:
-        return jsonify({ 'message': 'Invalid parameters' }), 422
+    if checkDataResult:
+        return checkDataResult
+
+    data = request.get_json()
 
     db_users = mongo.db.users
 
-    user = db_users.find_one({ 'email': email })
+    user = db_users.find_one({ 'email': data['email'] })
 
     if not user:
         return jsonify({ 'message': 'Invalid credentials' }), 401
 
-    if check_password_hash(user['password'], password):
-        access_token = create_access_token(identity=email, expires_delta=datetime.timedelta(hours=1))
+    if check_password_hash(user['password'], data['password']):
+        access_token = create_access_token(identity=data['email'], expires_delta=datetime.timedelta(hours=1))
 
         return jsonify({
             'access_token': access_token
@@ -95,9 +108,11 @@ def list():
 @app.route('/api/movies/<movie_id>', methods=['GET'])
 @jwt_required
 def show(movie_id):
-    if not ObjectId.is_valid(movie_id):
-        return jsonify({ 'message': 'Invalid parameters' }), 422
+    checkParamResult = checkParam(movie_id)
 
+    if checkParamResult:
+        return checkParamResult
+    
     db_movies = mongo.db.movies
     movie = db_movies.find_one({ '_id': ObjectId(movie_id) })
     
@@ -111,31 +126,35 @@ def show(movie_id):
 @app.route('/api/movies', methods=['POST'])
 @jwt_required
 def create():
+    props = ['title', 'brazilian_title', 'year_of_production', 'director', 'genre', 'cast']
+
+    checkDataResult = checkData(request.data, props)
+    
+    if checkDataResult:
+        return checkDataResult
+
+    data = request.get_json()
     db_movies = mongo.db.movies
     movie = {}
 
-    for prop in ['title', 'brazilian_title', 'year_of_production', 'director', 'genre', 'cast']:
-        if not request.json.get(prop, None):
-            return jsonify({ 'message': 'Invalid parameters' }), 422
-
+    for prop in props:
         if prop == 'cast':
-            for actor in request.json[prop]:
+            for actor in data[prop]:
                 if not 'name' in actor or not 'role' in actor:
                     return jsonify({ 'message': 'Invalid parameters' }), 422
         
-        movie[prop] = request.json[prop]
-    
-    title = request.json.get('title', None)
-    movies_with_title = db_movies.find({ 'title': title }).count()
+        movie[prop] = data[prop]
+
+    movies_with_title = db_movies.find({ 'title': data['title'] }).count()
 
     if movies_with_title > 0:
         return jsonify({
-            'message': 'Duplicate title \'' + title + '\'',
+            'message': 'Duplicate title \'' + data['title'] + '\'',
         }), 409
 
     db_movies.insert_one(movie)
 
-    created_movie = db_movies.find_one({ 'title': title })
+    created_movie = db_movies.find_one({ 'title': data['title'] })
     created_movie['_id'] = str(created_movie['_id'])
     
     return jsonify({
@@ -146,17 +165,19 @@ def create():
 @app.route('/api/movies/<movie_id>/update', methods=['PUT'])
 @jwt_required
 def update(movie_id):
-    if not ObjectId.is_valid(movie_id):
-        return jsonify({ 'message': 'Invalid parameters' }), 422
+    checkParamResult = checkParam(movie_id)
 
-    if not request.data:
-        return jsonify({ 'message': 'Invalid parameters' }), 422
+    if checkParamResult:
+        return checkParamResult
+
+    props = ['title', 'brazilian_title', 'year_of_production', 'director', 'genre', 'cast']
+
+    checkDataResult = checkData(request, props, False)
+
+    if checkDataResult:
+        return checkDataResult
 
     data = request.get_json()
-
-    if len(data) == 0:
-        return jsonify({ 'message': 'Invalid parameters' }), 422
-
     db_movies = mongo.db.movies
     title = request.json.get('title', None)
 
@@ -175,9 +196,8 @@ def update(movie_id):
 
     movie = {}
 
-    for prop in ['title', 'brazilian_title', 'year_of_production', 'director', 'genre', 'cast']:
-        if prop in data:
-            movie[prop] = data[prop]
+    for prop in data:
+        movie[prop] = data[prop]
 
     db_movies.update_one({ '_id': ObjectId(movie_id) }, { '$set': movie })
 
@@ -191,8 +211,10 @@ def update(movie_id):
 @app.route('/api/movies/<movie_id>/delete', methods=['DELETE'])
 @jwt_required
 def delete(movie_id):
-    if not ObjectId.is_valid(movie_id):
-        return jsonify({ 'message': 'Invalid parameters' }), 422
+    checkParamResult = checkParam(movie_id)
+
+    if checkParamResult:
+        return checkParamResult
 
     db_movies = mongo.db.movies
     deleted_movie = db_movies.find_one({ '_id': ObjectId(movie_id) })
@@ -263,4 +285,3 @@ def import_from_omdb():
         'message': 'Movie created',
         'item': created_movie
     }), 201
-

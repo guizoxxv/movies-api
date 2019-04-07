@@ -33,7 +33,7 @@ Siga os passos:
 
 ## Funcionamento
 
-Para utilizar a aplicação é necessário primeiro registrar um usuário no banco de dados através da rota `/api/register`. Feito isto é possível utilizar as credencias deste usuário para receber um token JWT de autorização através da rota `/api/login`. Este token é utilizado header da requisição com a chave `Authorization` em endpoints que exigem autorização.
+Para utilizar a aplicação é necessário primeiro registrar um usuário no banco de dados através da rota `/api/register`. Feito isto é possível utilizar as credencias deste usuário para receber um token JWT de autorização através da rota `/api/login`. Este token expira em 1h e é utilizado header da requisição com a chave `Authorization` em endpoints que exigem autorização.
 
 
 ## Endpoints
