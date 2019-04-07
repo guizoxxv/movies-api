@@ -1,8 +1,7 @@
 import unittest
 from flask_testing import TestCase
-from flask_pymongo import PyMongo
+from server import app, mongo
 from bson import ObjectId
-from server import app
 import json
 
 class BaseTestCase(TestCase):
@@ -13,12 +12,7 @@ class BaseTestCase(TestCase):
         return app
 
     def setUp(self):
-        mongo = PyMongo(app)
-
-        db_users = mongo.db.users
-        db_movies = mongo.db.movies
-
-        db_users.insert_many([
+        mongo.db.users.insert_many([
             {
                 "name": "User 1",
                 "email": "user1@example.com",
@@ -31,7 +25,7 @@ class BaseTestCase(TestCase):
             },
         ])
 
-        db_movies.insert_many([
+        mongo.db.movies.insert_many([
             {
                 "_id": ObjectId("5ca6a020d7d19372e81c582c"),
                 "title": "Fight Club",
@@ -71,13 +65,8 @@ class BaseTestCase(TestCase):
         ])
 
     def tearDown(self):
-        mongo = PyMongo(app)
-
-        db_users = mongo.db.users
-        db_movies = mongo.db.movies
-
-        db_users.drop()
-        db_movies.drop()
+        mongo.db.users.drop()
+        mongo.db.movies.drop()
 
 class AppTestCase(BaseTestCase):
 

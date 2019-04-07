@@ -1,15 +1,13 @@
-from server import app
+from server import app, mongo
 from flask import request, jsonify
-from flask_pymongo import PyMongo
-from bson import ObjectId
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_jwt_extended import JWTManager, jwt_required, create_access_token
+from bson import ObjectId
 import json
 import datetime
 import requests
 
 jwt = JWTManager(app)
-mongo = PyMongo(app)
 
 @app.route('/api', methods=['GET'])
 def api():

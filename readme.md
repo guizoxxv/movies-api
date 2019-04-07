@@ -93,9 +93,6 @@ Os endpoints que enviam dados no corpo da requisição possuem exemplos.
 
 ## Testes
 
-Siga os passos:
-
-1. Definir a variável de ambiente `APP_CONFIG="TestConfig"` no arquivo `.env`
-2. Executar o comando abaixo para executar os testes unitários:
+Para executar os testes unitários rode o comando abaixo:
 
 * `python tests.py -v`
