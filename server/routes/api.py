@@ -9,6 +9,10 @@ import requests
 
 jwt = JWTManager(app)
 
+@app.errorhandler(400)
+def bad_request(error):
+    return jsonify({ 'message': 'Bad request' }), 400
+
 @app.errorhandler(404)
 def not_found(error):
     return jsonify({ 'message': 'Not found' }), 404
@@ -154,7 +158,7 @@ def create():
         'item': created_movie
     }), 201
 
-@app.route('/api/movies/<movie_id>/update', methods=['PUT'])
+@app.route('/api/movies/<movie_id>', methods=['PUT'])
 @jwt_required
 def update(movie_id):
     checkParamResult = checkParam(movie_id)
@@ -200,7 +204,7 @@ def update(movie_id):
         'item': updated_movie
     }), 200
 
-@app.route('/api/movies/<movie_id>/delete', methods=['DELETE'])
+@app.route('/api/movies/<movie_id>', methods=['DELETE'])
 @jwt_required
 def delete(movie_id):
     checkParamResult = checkParam(movie_id)

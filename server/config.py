@@ -7,7 +7,6 @@ class BaseConfig(object):
 class TestConfig(BaseConfig):
     DEBUG = True
     MONGO_URI = 'mongodb://localhost:3012/movies_api_test'
-    JWT_SECRET_KEY = 'secret'
     TESTING = True
     PRESERVE_CONTEXT_ON_EXCEPTION = False
 

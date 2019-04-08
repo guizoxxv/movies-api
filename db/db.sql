@@ -1,7 +1,5 @@
 use movies_api;
 
-db.createCollection('movies');
-
 db.movies.insert({
     title: "Fight Club",
     brazilian_title: "Clube da Luta",

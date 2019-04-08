@@ -347,7 +347,7 @@ class AppTestCase(BaseTestCase):
 
     def test_update(self):
         method = 'put'
-        url = 'api/movies/5ca6a020d7d19372e81c582c/update'
+        url = 'api/movies/5ca6a020d7d19372e81c582c'
 
         self.setToken()
         self.checkAuth(method, url)
@@ -388,7 +388,7 @@ class AppTestCase(BaseTestCase):
 
         # Correct Authorizarion, invalid movie_id
         response4 = getattr(self.client, method)(
-            '/api/movies/123456/update',
+            '/api/movies/123456',
             headers={ 'Authorization': 'Bearer ' + self.token },
             data=json.dumps({
                 'year_of_production': 2000,
@@ -401,7 +401,7 @@ class AppTestCase(BaseTestCase):
 
         # Correct Authorizarion, incorrect movie_id
         response5 = getattr(self.client, method)(
-            '/api/movies/507f191e810c19729de860ea/update',
+            '/api/movies/507f191e810c19729de860ea',
             headers={ 'Authorization': 'Bearer ' + self.token },
             data=json.dumps({
                 'year_of_production': 2000,
@@ -413,7 +413,7 @@ class AppTestCase(BaseTestCase):
 
     def test_delete(self):
         method = 'delete'
-        url = 'api/movies/5ca6a020d7d19372e81c582c/delete'
+        url = 'api/movies/5ca6a020d7d19372e81c582c'
 
         self.setToken()
         self.checkAuth(method, url)
@@ -430,7 +430,7 @@ class AppTestCase(BaseTestCase):
 
         # Correct Authorizarion, invalid movie_id
         response2 = getattr(self.client, method)(
-            '/api/movies/123456/delete',
+            '/api/movies/123456',
             headers={ 'Authorization': 'Bearer ' + self.token },
             content_type="application/json"
         )
@@ -440,7 +440,7 @@ class AppTestCase(BaseTestCase):
 
         # Correct Authorizarion, incorrect movie_id
         response3 = getattr(self.client, method)(
-            '/api/movies/507f191e810c19729de860ea/delete',
+            '/api/movies/507f191e810c19729de860ea',
             headers={ 'Authorization': 'Bearer ' + self.token },
             content_type="application/json"
         )

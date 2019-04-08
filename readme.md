@@ -23,7 +23,7 @@ Siga os passos:
 
 2. Criar um banco `movies_api` no MongoDB (sem autentificação) e as collections `users` e `movies`;
 
-3. Copiar o conteúdo do arquivo .env.example `.env`
+3. Copiar o conteúdo do arquivo `.env.example` para um novo arquivo `.env`
 
 4. Executar o comando abaixo para iniciar a aplicação:
 

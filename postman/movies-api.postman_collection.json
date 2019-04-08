@@ -1,6 +1,6 @@
 {
 	"info": {
-		"_postman_id": "42c072cb-39e7-40b0-b2f1-824f3938923f",
+		"_postman_id": "679a9dbe-5a7e-4019-897a-ca0214ef6a29",
 		"name": "movies-api",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
 	},
@@ -267,15 +267,14 @@
 					"raw": ""
 				},
 				"url": {
-					"raw": "{{baseUrl}}/api/movies/:movieId/update",
+					"raw": "{{baseUrl}}/api/movies/:movieId",
 					"host": [
 						"{{baseUrl}}"
 					],
 					"path": [
 						"api",
 						"movies",
-						":movieId",
-						"update"
+						":movieId"
 					],
 					"variable": [
 						{
@@ -330,7 +329,7 @@
 						}
 					},
 					"_postman_previewlanguage": "json",
-					"header": null,
+					"header": [],
 					"cookie": [],
 					"body": "{\n\t\"year_of_production\": 2000\n}"
 				}
@@ -352,15 +351,14 @@
 					"raw": ""
 				},
 				"url": {
-					"raw": "{{baseUrl}}/api/movies/:movieId/delete",
+					"raw": "{{baseUrl}}/api/movies/:movieId",
 					"host": [
 						"{{baseUrl}}"
 					],
 					"path": [
 						"api",
 						"movies",
-						":movieId",
-						"delete"
+						":movieId"
 					],
 					"variable": [
 						{
@@ -443,7 +441,7 @@
 						}
 					},
 					"_postman_previewlanguage": "json",
-					"header": null,
+					"header": [],
 					"cookie": [],
 					"body": "{\n    \"movie_id\": \"tt0448115\"\n}"
 				}
